@@ -69,7 +69,7 @@ async function getRoom(req,res){
         const {roomId}=req.params;
         const room=await roomModel.findOne({roomId:roomId}).populate("owner members", "username name email");
         if(!room){
-            return res.status(401).json({
+            return res.status(404).json({
                 message:"Room not found"
             })
         }

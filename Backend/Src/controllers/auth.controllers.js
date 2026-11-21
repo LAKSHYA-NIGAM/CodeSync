@@ -2,7 +2,13 @@ const userModel=require("../models/user.model");
 const jwt=require("jsonwebtoken");
 const emailQueue=require("../Queue/email.queue");
 async function registeruser(req,res){
-    const{username,name,email,password}=req.body;
+    const { username, name, email, password } = req.body;
+    if (!username || !email || !password) {
+        return res.status(400).json({
+            message: "Username, email, and password are required",
+            status: "failed"
+        });
+    }
     const isExist=await userModel.findOne({
         email:email
     });
@@ -31,7 +37,13 @@ async function registeruser(req,res){
     })
 }
 async function loginuser(req,res){
-    const {email,password}=req.body;
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({
+            message: "Email and password are required",
+            status: "failed"
+        });
+    }
     const user = await userModel
         .findOne({ email })
         .select("+password");
