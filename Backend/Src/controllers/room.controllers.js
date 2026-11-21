@@ -1,10 +1,18 @@
 const crypto = require("crypto");
 const roomModel = require("../models/room.model");
+const { validateCreateRoom, validateRoomId } = require("../validators/room.validator");
 
 async function createRoom(req, res) {
     try {
-        const { roomName, language } = req.body;
+        const validation = validateCreateRoom(req.body || {});
+        if (!validation.isValid) {
+            return res.status(400).json({
+                message: "Validation failed",
+                errors: validation.errors
+            });
+        }
 
+        const { roomName, language } = validation.sanitized;
         const owner = req.user._id;
 
         const room = await roomModel.create({
@@ -22,105 +30,77 @@ async function createRoom(req, res) {
         });
 
     } catch (error) {
-        console.log(error);
-
+        console.error("Create room error:", error);
         res.status(500).json({
             message: "Internal server error"
         });
     }
 }
 
-
-async function joinRoom(req, res){
-    try{
-        const {roomId}= req.body;
-        if(!roomId){
+async function joinRoom(req, res) {
+    try {
+        const { roomId } = req.body || {};
+        if (!validateRoomId(roomId)) {
             return res.status(400).json({
-                message:"roomId are required"
+                message: "Valid roomId is required"
             });
         }
-        const userId=req.user._id;
-        const room=await roomModel.findOne({
-            roomId: roomId
-        })
-        if(!room){
+
+        const userId = req.user._id;
+        const room = await roomModel.findOne({ roomId });
+
+        if (!room) {
             return res.status(404).json({
-             "message":"Room not found"
+                message: "Room not found"
             });
-         }
-         if(!room.members.includes(userId)){
+        }
+
+        if (!room.members.includes(userId)) {
             room.members.push(userId);
             await room.save();
-         }
-         res.status(200).json({
-            "message":"room joined successfully"
-         })
         }
-    catch(error){
-        console.log(error);
+
+        res.status(200).json({
+            message: "room joined successfully"
+        });
+    } catch (error) {
+        console.error("Join room error:", error);
         res.status(500).json({
             message: "Internal server error"
         });
     }
 }
 
-async function getRoom(req,res){
-    try{
-        const {roomId}=req.params;
-        const room=await roomModel.findOne({roomId:roomId}).populate("owner members", "username name email");
-        if(!room){
-            return res.status(404).json({
-                message:"Room not found"
-            })
-        }
-        return res.status(200).json({
-            "message":"the following are the room details",
-             room:room
-        })
-
-    }
-    catch(error){
-        console.log(error);
-       res.status(500).json({
-            message: "Internal server error"
-        });
-    }
-}
-async function leaveRoom(req, res) {
-    try{
-        const { roomId } = req.body;
-        const userId=req.user.id;
-        if (!roomId) {
+async function getRoomDetails(req, res) {
+    try {
+        const { roomId } = req.params;
+        if (!validateRoomId(roomId)) {
             return res.status(400).json({
-                message: "roomId is required"
+                message: "Valid roomId is required"
             });
         }
-        const room= await roomModel.findOne({roomId:roomId});
-        if(!room){
+
+        const room = await roomModel.findOne({ roomId }).populate("members", "username email");
+        if (!room) {
             return res.status(404).json({
-                "message":"room not found"
-            })
+                message: "Room not found"
+            });
         }
-        room.members=room.members.filter(
-            member => !member.equals(userId)
-        )
-        await room.save();
+
         res.status(200).json({
-            message: "Room left successfully"
+            message: "Room details fetched successfully",
+            room
         });
-    }
-    catch (error){
-        console.log(error);
-         res.status(500).json({
+    } catch (error) {
+        console.error("Get room details error:", error);
+        res.status(500).json({
             message: "Internal server error"
         });
     }
 }
-
 
 module.exports = {
     createRoom,
     joinRoom,
-    getRoom,
-    leaveRoom
+    getRoomDetails
 };
