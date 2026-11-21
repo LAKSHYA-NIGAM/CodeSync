@@ -116,7 +116,11 @@ npm run dev
 
 ## 🧪 Automated Testing
 
-CodeSync includes automated unit and integration tests covering UUID generation, authentication input validation, room membership deduplication, and Redis rate limiting:
+CodeSync includes 15 automated unit and integration tests covering:
+- **Room Validation & Membership**: UUID format validation, room payload verification, and duplicate member prevention.
+- **Collaborative Code Diff Engine**: Line-level change computation, modification/addition tracking, and patch application.
+- **Authentication**: Input sanitation and validation for registration and login credentials.
+- **Rate Limiting**: Redis-backed sliding window rate limiter verification.
 
 ```bash
 cd Backend
