@@ -3,22 +3,26 @@ const userModel = require("../models/user.model");
 
 async function authMiddleware(req, res, next) {
     try {
-        // 1. Get token from Authorization header
+        // 1. Get token from Authorization header or cookie
         const authHeader = req.headers.authorization;
+        let token = null;
 
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.split(" ")[1];
+        } else if (req.cookies && req.cookies.token) {
+            token = req.cookies.token;
+        }
+
+        if (!token) {
             return res.status(401).json({
                 message: "Authentication token required"
             });
         }
 
-        // 2. Extract token
-        const token = authHeader.split(" ")[1];
+        // 2. Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_fallback');
 
-        // 3. Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // 4. Find the user
+        // 3. Find the user
         const user = await userModel.findById(decoded.userId);
 
         if (!user) {
@@ -27,10 +31,10 @@ async function authMiddleware(req, res, next) {
             });
         }
 
-        // 5. Attach user to request
+        // 4. Attach user to request
         req.user = user;
 
-        // 6. Continue to controller
+        // 5. Continue to controller
         next();
 
     } catch (error) {
