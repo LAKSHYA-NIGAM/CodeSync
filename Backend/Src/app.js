@@ -14,4 +14,20 @@ app.use("/api/room", roomRoute);
 app.use("/api/route", roomRoute);
 
 
+
+// 404 handler for unmatched API routes
+app.use("/api", (req, res) => {
+    res.status(404).json({ error: `Endpoint ${req.method} ${req.originalUrl} not found` });
+});
+
+// Centralized error handling middleware
+app.use((err, req, res, next) => {
+    console.error("[CodeSync Error]", err);
+    const status = err.status || 500;
+    res.status(status).json({
+        error: err.message || "Internal server error",
+        timestamp: new Date().toISOString()
+    });
+});
+
 module.exports=app;

@@ -86,4 +86,15 @@ server.listen(3000, () => {
     console.log("Server is running on port 3000");
 });
 
-module.exports={redis};
+
+// Graceful shutdown handling
+process.on("SIGTERM", () => {
+    console.log("[CodeSync] SIGTERM signal received: closing HTTP server...");
+    server.close(() => {
+        console.log("[CodeSync] HTTP server closed.");
+        try { redis.quit(); } catch (e) {}
+        process.exit(0);
+    });
+});
+
+module.exports={redis, server, io};
